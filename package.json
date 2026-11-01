@@ -1,0 +1,8 @@
+{
+  "name": "foot-boosters",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@netlify/blobs": "latest"
+  }
+}
