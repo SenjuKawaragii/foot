@@ -1570,7 +1570,7 @@ async function cloudPull(){
  if(Object.keys(CL.dirty).length)cloudSoon();else{CL.msg="Compte relié ☁️ : tout est à jour";updBtn()}
 }
 var SEEDOBJ,IDBPENDING,IDBP=null,LSF=false;
-var NET={ok:false};
+var NET={ok:true};
 function clone(o){return JSON.parse(JSON.stringify(o))}
 function lsRaw(k){try{return localStorage.getItem(k)}catch(e){return null}}
 function getSeed(){
