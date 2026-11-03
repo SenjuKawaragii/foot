@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
+<!-- SDK Firebase App + Realtime Database -->
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 
@@ -16,8 +17,9 @@
     measurementId: "G-TFZ473T4NY"
   };
 
+  // Initialisation de Firebase
   firebase.initializeApp(firebaseConfig);
-  const db = firebase.database(); // Initialisation de Realtime Database
+  const db = firebase.database();
 </script>
 <style>
 :root{--bg:#0b1020;--surface:#151c33;--text:#f2f5ff;--muted:#8d97b8;--line:#263055;--accent:#3ddc84;
@@ -1512,7 +1514,6 @@ async function cloudNow() {
   }
 
   try {
-    // Sauvegarde dans Realtime Database sous un nœud "foot_boosters_users"
     await db.ref('foot_boosters_users/' + S.name).set({
       playerState: S,
       lastUpdated: Date.now()
