@@ -1378,7 +1378,7 @@ function rivalHTML(){
  return head+`<div class="alist">`+L.map(o=>`<div class="ach ${mineOf(o)?"done":""}"><div style="flex:1;min-width:0"><b>${cn(o.f)}</b> vs <b>${cn(o.s)}</b><small>${o.n} match${o.n>1?"s":""} · ${o.w} V · ${o.d} N · ${o.l} D (vu de ${esc((clubById(o.f)||{name:"?"}).name)})</small><small>Buts : ${o.gf} - ${o.gs} · moyenne ${(o.gf/o.n).toFixed(1)} - ${(o.gs/o.n).toFixed(1)}${o.n>=5?" "+"🔥".repeat(Math.min(3,Math.floor(o.n/5))):""}</small></div><button class="btn" style="padding:6px 10px;font-size:12px" onclick="rvSel='${o.k}';renderComp()">👀 Voir</button></div>`).join("")+`</div>`;
 }
 var PX;
-var CL={db:null,uid:null,ok:false,busy:false,t:null,dirty:{},msg:"Connexion au compte…"};
+var CL={db:null,uid:null,ok:true,busy:false,t:null,dirty:{},msg:"Connexion au compte..."};
 function lsGet(k){try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}}
 function bootProfiles(){
  let idx=lsGet("fbidx");
