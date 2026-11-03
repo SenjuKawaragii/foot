@@ -1,15 +1,10 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Foot Boosters</title>
-<!-- Scripts Firebase compatibles HTML direct -->
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 
 <script>
-  // Configuration de votre projet Firebase
   const firebaseConfig = {
     apiKey: "AIzaSyAEYZKj9zh0UJFYi5e1NmlwQuswUQ7ZNS0",
     authDomain: "foot-booster.firebaseapp.com",
@@ -21,9 +16,8 @@
     measurementId: "G-TFZ473T4NY"
   };
 
-  // Initialisation de Firebase et Firestore
   firebase.initializeApp(firebaseConfig);
-  const db = firebase.firestore();
+  const db = firebase.database(); // Initialisation de Realtime Database
 </script>
 <style>
 :root{--bg:#0b1020;--surface:#151c33;--text:#f2f5ff;--muted:#8d97b8;--line:#263055;--accent:#3ddc84;
@@ -1518,11 +1512,11 @@ async function cloudNow() {
   }
 
   try {
-    // Sauvegarde l'état du jeu (S) sur Firestore sous le nom du joueur
-    await db.collection("foot_boosters_users").doc(S.name).set({
+    // Sauvegarde dans Realtime Database sous un nœud "foot_boosters_users"
+    await db.ref('foot_boosters_users/' + S.name).set({
       playerState: S,
-      lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
-    }, { merge: true });
+      lastUpdated: Date.now()
+    });
 
     if (document.getElementById("cstat2")) {
       document.getElementById("cstat2").innerText = "☁️ Synchronisé avec succès sur Firebase !";
@@ -1532,6 +1526,7 @@ async function cloudNow() {
     console.error("Erreur Firebase :", error);
     if (typeof showToast === "function") showToast("❌ Erreur de synchronisation.");
   }
+}
 }async function cloudPush(){
  if(!CL.ok)return;
  if(CL.busy){CL.t=setTimeout(cloudPush,2500);return}
