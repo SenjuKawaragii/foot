@@ -1,26 +1,9 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<!-- SDK Firebase App + Realtime Database -->
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
-
-<script>
-  const firebaseConfig = {
-    apiKey: "AIzaSyAEYZKj9zh0UJFYi5e1NmlwQuswUQ7ZNS0",
-    authDomain: "foot-booster.firebaseapp.com",
-    databaseURL: "https://foot-booster-default-rtdb.firebaseio.com",
-    projectId: "foot-booster",
-    storageBucket: "foot-booster.firebasestorage.app",
-    messagingSenderId: "1071636553496",
-    appId: "1:1071636553496:web:66f79164fb69d67bfb486d",
-    measurementId: "G-TFZ473T4NY"
-  };
-
-  // Initialisation de Firebase
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.database();
-</script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Foot Boosters</title>
 <style>
 :root{--bg:#0b1020;--surface:#151c33;--text:#f2f5ff;--muted:#8d97b8;--line:#263055;--accent:#3ddc84;
 box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
@@ -1374,7 +1357,7 @@ function rivalHTML(){
  return head+`<div class="alist">`+L.map(o=>`<div class="ach ${mineOf(o)?"done":""}"><div style="flex:1;min-width:0"><b>${cn(o.f)}</b> vs <b>${cn(o.s)}</b><small>${o.n} match${o.n>1?"s":""} · ${o.w} V · ${o.d} N · ${o.l} D (vu de ${esc((clubById(o.f)||{name:"?"}).name)})</small><small>Buts : ${o.gf} - ${o.gs} · moyenne ${(o.gf/o.n).toFixed(1)} - ${(o.gs/o.n).toFixed(1)}${o.n>=5?" "+"🔥".repeat(Math.min(3,Math.floor(o.n/5))):""}</small></div><button class="btn" style="padding:6px 10px;font-size:12px" onclick="rvSel='${o.k}';renderComp()">👀 Voir</button></div>`).join("")+`</div>`;
 }
 var PX;
-var CL={db:null,uid:null,ok:true,busy:false,t:null,dirty:{},msg:"Connexion au compte..."};
+var CL={db:null,uid:null,ok:false,busy:false,t:null,dirty:{},msg:"Connexion au compte…"};
 function lsGet(k){try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}}
 function bootProfiles(){
  let idx=lsGet("fbidx");
@@ -1507,28 +1490,11 @@ function cloudSoon(){
  if(!CL.ok)return;
  clearTimeout(CL.t);CL.t=setTimeout(cloudPush,2500);updBtn();
 }
-async function cloudNow() {
-  if (!S || !S.name) {
-    if (typeof showToast === "function") showToast("⚠️ Définissez un pseudo dans votre profil !");
-    return;
-  }
-
-  try {
-    await db.ref('foot_boosters_users/' + S.name).set({
-      playerState: S,
-      lastUpdated: Date.now()
-    });
-
-    if (document.getElementById("cstat2")) {
-      document.getElementById("cstat2").innerText = "☁️ Synchronisé avec succès sur Firebase !";
-    }
-    if (typeof showToast === "function") showToast("Succès : Données enregistrées !");
-  } catch (error) {
-    console.error("Erreur Firebase :", error);
-    if (typeof showToast === "function") showToast("❌ Erreur de synchronisation.");
-  }
+function cloudNow(){
+ if(!CL.ok){updBtn();return}
+ CL.dirty[PX.active]=1;clearTimeout(CL.t);cloudPush();
 }
-}async function cloudPush(){
+async function cloudPush(){
  if(!CL.ok)return;
  if(CL.busy){CL.t=setTimeout(cloudPush,2500);return}
  const ids=Object.keys(CL.dirty);if(!ids.length){updBtn();return}
@@ -1566,7 +1532,7 @@ async function cloudPull(){
  if(Object.keys(CL.dirty).length)cloudSoon();else{CL.msg="Compte relié ☁️ : tout est à jour";updBtn()}
 }
 var SEEDOBJ,IDBPENDING,IDBP=null,LSF=false;
-var NET={ok:true};
+var NET={ok:false};
 function clone(o){return JSON.parse(JSON.stringify(o))}
 function lsRaw(k){try{return localStorage.getItem(k)}catch(e){return null}}
 function getSeed(){
@@ -2376,5 +2342,5 @@ for(const id of ["n-name","n-team","n-rating"])document.getElementById(id).oninp
 document.getElementById("countries").innerHTML=COUNTRIES.map(c=>`<option value="${c[0]}">`).join("");
 info();preview();updBtn();cloudInit();if(IDBPENDING)idbBoot();applyAccent();flushHooks();if(PX.list.length>1&&!PX.def)openProfiles(true);
 </script>
-</body><!-- SDK Firebase Compat pour HTML classique -->
+</body>
 </html>
