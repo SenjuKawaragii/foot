@@ -2377,26 +2377,4 @@ document.getElementById("countries").innerHTML=COUNTRIES.map(c=>`<option value="
 info();preview();updBtn();cloudInit();if(IDBPENDING)idbBoot();applyAccent();flushHooks();if(PX.list.length>1&&!PX.def)openProfiles(true);
 </script>
 </body><!-- SDK Firebase Compat pour HTML classique -->
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-
-<script>
-  // Vos clés de configuration Firebase
-  const firebaseConfig = {
-    apiKey: "AIzaSyAEYZKj9Zh0UJFYi5eUNmLwQusuUQ7ZNS0",
-    authDomain: "foot-booster.firebaseapp.com",
-    databaseURL: "https://foot-booster-default-rtdb.firebaseio.com",
-    projectId: "foot-booster",
-    storageBucket: "foot-booster.firebasestorage.app",
-    messagingSenderId: "1071636553496",
-    appId: "1:1071636553496:web:667f9164fb69d67bfb486d",
-    measurementId: "G-TFZ473T4NY"
-  };
-
-  // Initialisation de Firebase et de la base de données
-  firebase.initializeApp(firebaseConfig);
-  const database = firebase.database();
-
-  console.log("Firebase connecté avec succès !");
-</script>
 </html>
