@@ -8,7 +8,8 @@ import crypto from "node:crypto";
   - "poll" : le navigateur demande les changements (attente longue ~7 s) -> mises à jour presque instantanées
 */
 
-const SELF = new Set(["pub", "pcol", "fr", "mk", "out", "rp", "cards", "clubs"]);
+const SELF = new Set(["pub", "pcol", "fr", "mk", "out", "rp"]);   // espace personnel : chacun écrit chez soi
+const OPEN = new Set(["cards", "clubs"]);                         // cartes et clubs : tout le monde crée, modifie, supprime
 const SEG = /^[A-Za-z0-9_\-.~:@+]{1,200}$/;
 const MAXDOC = 256 * 1024;
 const J = (o, s = 200) => new Response(JSON.stringify(o), { status: s, headers: { "content-type": "application/json", "cache-control": "no-store" } });
@@ -24,13 +25,14 @@ function okPath(p) {
 function canWrite(uid, p) {
   const s = p.split("/");
   if (s[0] === "data" && s[1] === "users") return s[2] === uid;
+  if (OPEN.has(s[0])) return s.length >= 2;
   if (SELF.has(s[0])) return s[1] === uid;
   return false;
 }
 function canRead(uid, p) {
   const s = p.split("/");
   if (s[0] === "data" && s[1] === "users") return s[2] === uid;
-  return SELF.has(s[0]);
+  return SELF.has(s[0]) || OPEN.has(s[0]);
 }
 function merge(a, b) {
   for (const k of Object.keys(b)) {
@@ -46,30 +48,26 @@ const bump = (s) => s.set("ver", Date.now() + "-" + crypto.randomBytes(3).toStri
 async function session(s, uid, name) {
   const tok = newToken();
   await s.setJSON("tok/" + tok, { uid, t: Date.now() });
-  const adm = await s.get("admin", { type: "text" });
-  return { tok, uid, name, owner: adm === uid };
+  return { tok, uid, name };
 }
-async function reg(s, b) {
+// Un seul geste : pseudo + mot de passe. Pseudo inconnu = compte créé ; pseudo connu = on vérifie le mot de passe.
+async function enter(s, b) {
   const name = String(b.name || "").trim();
   const pass = String(b.pass || "");
   if (!/^[\p{L}\p{N}_\- ]{2,20}$/u.test(name)) return bad("bad_name", "Pseudo : 2 à 20 caractères (lettres, chiffres, espace, - ou _).");
   if (pass.length < 4 || pass.length > 64) return bad("bad_pass", "Mot de passe : 4 caractères minimum.");
   const key = "acc/" + name.toLowerCase();
-  if ((await s.get(key, { type: "json" })) !== null) return bad("exists", "Ce pseudo est déjà pris.", 409);
+  const acc = await s.get(key, { type: "json" });
+  if (acc) {
+    const h = hash(pass, acc.salt);
+    if (!crypto.timingSafeEqual(Buffer.from(h), Buffer.from(acc.hash))) return bad("bad", "Ce pseudo existe déjà avec un autre mot de passe.", 401);
+    return J(await session(s, acc.id, acc.name));
+  }
   const uid = "u" + crypto.randomBytes(8).toString("hex");
   const salt = crypto.randomBytes(16).toString("hex");
   await s.setJSON(key, { id: uid, name, salt, hash: hash(pass, salt), t: Date.now() });
   await s.setJSON("uid/" + uid, { name });
-  if ((await s.get("admin", { type: "text" })) === null) await s.set("admin", uid);
   return J(await session(s, uid, name));
-}
-async function login(s, b) {
-  const name = String(b.name || "").trim();
-  const acc = await s.get("acc/" + name.toLowerCase(), { type: "json" });
-  if (!acc) return bad("bad", "Pseudo ou mot de passe incorrect.", 401);
-  const h = hash(String(b.pass || ""), acc.salt);
-  if (!crypto.timingSafeEqual(Buffer.from(h), Buffer.from(acc.hash))) return bad("bad", "Pseudo ou mot de passe incorrect.", 401);
-  return J(await session(s, acc.id, acc.name));
 }
 async function poll(s, uid, b) {
   const subs = b.subs && typeof b.subs === "object" ? b.subs : {};
@@ -81,7 +79,7 @@ async function poll(s, uid, b) {
     const needInit = cols.some((c) => subs[c] === null);
     if (b.force || needInit || cur !== b.ver) break;
     if (Date.now() - t0 > 7000) return J({ same: true, ver: cur });
-    await sleep(500);
+    await sleep(250);
   }
   const out = {};
   let budget = 3000000, more = false;
@@ -119,14 +117,13 @@ export default async (req) => {
   const s = store();
   const op = b.op;
   try {
-    if (op === "reg") return await reg(s, b);
-    if (op === "login") return await login(s, b);
+    if (op === "enter") return await enter(s, b);
     const t = await s.get("tok/" + String(req.headers.get("x-token") || "").replace(/[^a-f0-9]/g, ""), { type: "json" });
     const uid = t && t.uid;
     if (!uid) return bad("unauthorized", "Connecte-toi", 401);
     if (op === "me") {
       const u = await s.get("uid/" + uid, { type: "json" });
-      return J({ uid, name: (u && u.name) || "", owner: (await s.get("admin", { type: "text" })) === uid });
+      return J({ uid, name: (u && u.name) || "" });
     }
     if (op === "names") {
       const ids = Array.isArray(b.ids) ? b.ids.slice(0, 100) : [];
@@ -135,6 +132,19 @@ export default async (req) => {
       return J({ names });
     }
     if (op === "poll") return await poll(s, uid, b);
+    if (op === "batch") {
+      const w = Array.isArray(b.writes) ? b.writes.slice(0, 60) : [];
+      for (const x of w) {
+        if (!x || !okPath(x.path) || !canWrite(uid, x.path)) return bad("invalid_argument", "Écriture refusée ici", 403);
+        if (x.data !== null && x.data !== undefined && (typeof x.data !== "object" || Array.isArray(x.data) || JSON.stringify(x.data).length > MAXDOC)) return bad("invalid_argument", "Document invalide");
+      }
+      for (const x of w) {
+        if (x.data === null || x.data === undefined) await s.delete("doc/" + x.path);
+        else await s.setJSON("doc/" + x.path, x.data);
+      }
+      await bump(s);
+      return J({ ok: true, n: w.length });
+    }
     const path = b.path;
     if (!okPath(path)) return bad("invalid_argument", "Chemin invalide");
     if (op === "get") {
